@@ -1,0 +1,353 @@
+---
+title: "Assignment_3_Garima_Sharma"
+author: "Garima Sharma MNumber: 08586245"
+date: "November 19, 2015"
+
+output: html_document
+---
+
+**Question 1. Reading the Life Expectancy Data.** 
+
+```{r}
+rm(list=ls())
+origdata = read.csv("data-table-B-16.csv", header = T)
+```
+
+Data imported in data frame `origdata`.
+
+**Question 2. Plot and Explore Life Expectancy Data.** 
+
+```{r}
+numberOfVariables <- ncol(origdata)
+variableNames <- colnames(origdata)
+numberOfObservations <- nrow(origdata)
+```
+
+Number of variables in Life Expectancy dataset is 
+`r numberOfVariables` and variable names are `r variableNames`. 
+
+In Life Expectancy dataset, total number of observations are `r numberOfObservations`.
+
+```{r, echo=FALSE}
+origdata = read.csv("C:/Users/Garima/Downloads/data-table-B-16.csv", header = T)
+par(mfrow=c(1,5))
+hist(origdata$LifeExp, 
+     main="Histogram for Life Exp", 
+     xlab="Life Exp", 
+     border="blue", 
+     col="green")
+
+
+hist(origdata$People.per.TV, 
+     main="Histogram for People per TV", 
+     xlab="People per TV", 
+     border="blue", 
+     col="green")
+
+hist(origdata$People.per.Dr, 
+     main="Histogram for People per Dr", 
+     xlab="People per Dr", 
+     border="blue", 
+     col="green")
+
+hist(origdata$LifeExpMale, 
+     main="Histogram for Life Exp Male", 
+     xlab="Life Exp Male", 
+     border="blue", 
+     col="green")
+
+hist(origdata$LifeExpFemale, 
+     main="Life Exp Female", 
+     xlab="Height", 
+     border="blue", 
+     col="green")
+```
+
+`pairs()` functionality can be used to plot the relatonship between these paramaters.  
+
+```{r echo=FALSE}
+pairs(origdata[2:4], pch = 20)
+```
+
+**Question 3. Building Multilinear Regression**
+
+Multilinear Regression Model can be calculated using the equation:
+
+y = $\beta_0$ + $\beta_1$*x1 + $\beta_2$*x2 + $\epsilon$
+
+where y is 'LifeExp'
+x1 is 'People-per-TV'
+and x2 is 'People-per-Dr'
+
+**3.1 Obtaining Coefficient Estimates**
+
+Calculating linear regression model using lm():
+
+```{r}
+frameData =data.frame(origdata$LifeExp,origdata$People.per.TV,origdata$People.per.Dr)
+```
+
+```{r}
+modelLR <- lm(origdata$LifeExp ~ origdata$People.per.TV + origdata$People.per.Dr, data=frameData)
+```
+
+We can directly obtain the beta coefficient as 
+```{r}
+modelLR$coefficients
+```
+
+**3.2 95% Confidence Interval Estimation of Coefficients**
+
+CI value can be calculated with a probability using the level of confidence which is given as (1-$\alpha$).
+
+```{r}
+beta0hat = modelLR$coefficients[1]
+beta1hat = modelLR$coefficients[2]
+beta2hat = modelLR$coefficients[3]
+n = dim(origdata)[1]
+k=2
+p=3
+alpha = 0.05
+tCritical = qt(1-alpha/2, n-3)
+sebeta0hat = summary(modelLR)$coef[1,2]
+sebeta1hat = summary(modelLR)$coef[2,2]
+sebeta2hat = summary(modelLR)$coef[3,2]
+```
+
+Confidence Intervals for Coefficients are given as:
+
+`r round((beta0hat - tCritical*sebeta0hat),3)` <= $\beta_0$ <= `r round((beta0hat + tCritical*sebeta0hat),3)`
+
+`r round((beta1hat - tCritical*sebeta1hat),3)` <= $\beta_1$ <= `r round((beta1hat + tCritical*sebeta1hat),3)`
+
+`r round((beta2hat - tCritical*sebeta2hat),4)` <= $\beta_2$ <= `r round((beta2hat + tCritical*sebeta2hat),4)`
+
+so it shows that population values of slope and intercept can be there in the  range with a probability of 95%.
+
+**3.3 T Test**
+
+For equation
+y = $\beta_0$ + $\beta_1$*x1 + $\beta_2$*x2 + $\epsilon$
+
+We will state the null hypothesis $H_0: \beta_1 = 0$ and $H_0: \beta_2 = 0$ and alternate hypotheis $H_1: \beta_1 != 0$ $H_2: \beta_2 != 0$.
+
+Caluclating the T statistic and comparing it with the critical value of t, we can reject or fail to reject the above defined hypothesis. 
+
+The t-statistic is given as $t_0 = \beta_1 / SE(\beta_1)$
+
+Reading the coefficients data from the output of `summary` functionality can directly provide us the t-statistic for our data as follows: 
+
+```{r}
+summary(modelLR)$coef
+alpha = 0.05
+```
+
+For Coefficient $\hat{\beta_1}$, t-statistic is `r round(summary(modelLR)$coefficients[2,3],3)`, t critical is  `r tCritical` and p value is `r (summary(modelLR)$coefficients[2,4])`.
+
+While for Coefficient $\hat{\beta_2}$, t-statistic is `r round(summary(modelLR)$coefficients[3,3],3)`, t critical is  `r tCritical` and p value is `r (summary(modelLR)$coefficients[3,4])`.
+
+Since t-statistic is less that t-critical , we reject the null hypothesis and can arrive at conclusion that there exists a linear relationship between y and x.
+
+Also, since the value calculated for p-values are less than $\alpha = 0.05$ so we can reject null hypothesis.
+
+**3.4 F Test**
+
+Null hypothesis is $H_0: \beta_1 = \beta_2 = 0$ and alternate hypothesis is $H_1: \beta_j != 0$ for at least one j.
+
+Source of variation  | Sum of squares | DF  | MS  | F 
+--- | --- | --- | --- | ---
+Regression  | SSR | k  | MSR=SSR/l  | MSR/MSRES
+Residual  | SSRES | n-k-1  | MSRES=SSRES/(n-k-1)   |  |    
+Total   | SST | n-1  |   |   | 
+
+Calculating SST, SSRES, SSR as described below, we can determine the F-statistic:
+
+```{r} 
+colnames(frameData)=c("y","x1","x2")
+```
+
+```{r} 
+sstVal=sum((frameData$y-mean(frameData$y))^2)
+```
+
+SST: `r sstVal`
+
+```{r} 
+ssresVal=sum((frameData$y-modelLR$fitted.values)^2)
+```
+
+SSRES: `r ssresVal`
+
+```{r} 
+ssrVal=sum((modelLR$fitted.values-mean(frameData$y))^2)
+```
+
+SSR: `r ssrVal`
+
+```{r} 
+fVal=ssrVal/2/(ssresVal/(n-2-1))
+```
+
+F: `r fVal`
+
+```{r}
+fcritical = qf(alpha, k, n-p)
+```
+
+Comparing F with the critical value of F determined as `r fcritical`.
+
+Based on the values calculated, we can infer that F statistic calculated is greater than the F critical hence we can reject the null hypothesis.
+
+Calculatin p value:
+
+```{r} 
+pval = 1-pf(fVal, 1, n-k-1)
+```
+
+p value: `r pval`
+
+As we can see that p value is less than the value of alpha `r alpha` hence we can reject the null hypothesis.
+
+**3.5 Calculating SST, SSR and SSRES**
+
+Definitions:
+
+SSR is the sum of squares of Regression which provides the variance in the fitted value given by the summation of squares of difference between fitted y and mean y.
+
+SSRES is the residual sum of squares which provides the the variance in the fitted value given by the summation of squares of difference between actual y values and fitted y values.
+
+SST is the total sum of squares which provides the total variance in values of y from its mean given by the sum of SSR and SSRES.
+
+
+```{r} 
+SST=sum((frameData$y-mean(frameData$y))^2)
+SST
+SSRes=sum((frameData$y-modelLR$fitted.values)^2)
+SSRes
+SSR=sum((modelLR$fitted.values-mean(frameData$y))^2)
+SSR
+```
+   
+SST (`r SST`) = SSR (`r SSRes`) + SSRES (`r SSR`).
+
+**3.6  Coefficient of Determination R^2**
+
+R^2 is the ratio of SSR to SST. It gives the variation provided by the independent variables i.e. R^2 = SSR/SST.
+
+```{r}
+RsquareVal = summary(modelLR)$r.square
+```
+
+R^2 = `r RsquareVal`
+
+**3.7 95% confidence interval for the fitted values (mean response)**
+
+```{r }
+confinterval=predict(modelLR,frameData,level=0.95,interval="confidence")
+```
+
+Confidence Interval determines the range in which fitted value is determined for the values of independent variables with a  probability of 100*(1-alpha).
+
+**3.8  Predict life expectancy of a country with People.per.TV = 10 and People.per.Dr = 1000**
+
+```{r }
+colnames(frameData)=c("y","x1","x2")
+modelLR <- lm(y ~ x1 + x2, data=frameData)
+predVal1 = predict(modelLR,list(x1=10,x2=1000),interval="pred")
+predVal1
+```
+
+Prediction in multiple regression is extrapolated when the values of independent variables is beyond the region covering original observations.
+
+```{r}
+x0=c(1,10,1000)
+
+column1 = rep(1, n)
+column2 = frameData$x1
+column3 = frameData$x2
+X = matrix(c(column1, column2, column3), nrow=n)
+```
+
+```{r}
+h00 = t(x0)%*%solve(t(X)%*%X)%*%x0
+h00
+H=X%*%solve(t(X)%*%X)%*%t(X)
+hmaxVal = max(diag(H))
+hmaxVal
+```
+
+Since h00=`r h00` is less than hmax=`r hmaxVal`, so we have to do interpolation.
+
+
+**3.9  Predict life expectancy with People.per.TV = 1000 and People.per.Dr = 50000**
+
+```{r }
+colnames(frameData)=c("y","x1","x2")
+modelLR <- lm(y ~ x1 + x2, data=frameData)
+predVal2 = predict(modelLR,list(x1=1000,x2=50000),interval="pred")
+predVal2
+x0=c(1,1000,50000)
+column1 = rep(1, n)
+column2 = frameData$x1
+column3 = frameData$x2
+X = matrix(c(column1, column2, column3), nrow=n)
+h00 = t(x0)%*%solve(t(X)%*%X)%*%x0
+h00
+H=X%*%solve(t(X)%*%X)%*%t(X)
+hmaxValue = max(diag(H))
+```
+
+In our case h00=`r h00` < hmax=`r hmaxValue` so extrapolation is required.
+
+**3.10 Check Orthogonal - People.per.TV and People.per.Dr**
+
+```{r}
+
+modelVal1 <- lm(origdata$LifeExp ~ origdata$People.per.TV + origdata$People.per.Dr, data=frameData)
+modelVal2 <- lm(origdata$LifeExp ~ origdata$People.per.TV, data=frameData)
+modelVal3 <- lm(origdata$LifeExp ~ origdata$People.per.Dr, data=frameData)
+modelVal1
+modelVal2
+modelVal3
+```
+
+If variables have individual explanatory power to derive the dependent variables then they are said to be orthogonal. We can determine that by the above approach:
+
+We can prove that x1 and x2 are orthogonal as:
+
+New value of $\beta_1$ of -0.035 is not much different from previous value of $\beta_1$ of -0.023
+
+New value of $\beta_2$ is also not much different from previous value of $\beta_2$.
+
+Hence we can can conclude that x1 and x2 are orthogonal.
+
+**3.11 Standardized Regression Coefficients**
+
+Unit length scaling
+``` {r}
+unitlengthval = as.data.frame(apply(frameData,2,function(x){(x-mean(x))/sqrt(sum((x-mean(x))^2))}))
+model1ULval <- lm(origdata$LifeExp ~ origdata$People.per.TV + origdata$People.per.Dr, data=unitlengthval)
+model1ULval
+```
+
+Unit Normal Scaling
+```{r} 
+unitnormalval=as.data.frame(apply(frameData,2,function(x){(x-mean(x))/sd(x)}))
+model1UNval <- lm(y ~ x1+x2, data=unitnormalval)
+model1UNval
+```
+
+After the above calculation, we can determine that standardized coefficient of x1 and x2 are comparable and in similar range.
+
+**3.12 Determination of multicollinearity issue in the data**
+
+Multicolinearity exist if VIF > 10
+
+```{r}
+library(car)
+vif(modelLR)
+```
+
+In our case, VIF is calculated as 1.597 which < 10 hence there does not exist any multicollinearity between regressors People.per.TV and People.per.Dr.
+
+
