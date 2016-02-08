@@ -1,0 +1,320 @@
+---
+title: "Midterm BANA7038"
+author: "Garima Sharma"
+date: "November 27, 2015"
+MNumber: M08586245
+output: html_document
+---
+
+####Summary
+
+In this module, we are analyzing the data provided for Aircraft (with number of observations = 800). 
+
+Firstly, we are reading the data, calculating sample size, cleaning the data based on the conditions provided for height, speed_ground, speed_air, duration and distance, visualizing the data, selecting the parameters, model checking, re-modeling with higher degree, determining model adequacy and checking goodness of fit.
+
+Based on the various functions and tests performed on the data, we can conclude that the model is a best fit and landing distance is dependent on the make of aircraft, ground speed and height over threshold.
+
+Analysing the model,
+
+y = $\beta_0$ + $\beta_1$x1 + $\beta_2$x2 + $\beta_3$x2 + $\beta_4$x3^2
+
+where $\beta_i$ are the co-efficients which are represented as:
+
+y(distance) = 1774.48 + 402.75 * x1 + 13.71 * x2 - 68.82 * x3 + 0.69 * $x3^2$   
+
+x1 = Type of aircraft with Boeing = 1 and Airbus = 0
+
+x2 = height
+
+x3 = speed_ground
+
+**1. Reading the data**
+
+#####Clean Memory and Read Data
+```{r}
+rm(list=ls())
+landingData = read.csv("landing.csv", header = TRUE)
+```
+
+To read data from csv file into dataset I have used the function read.csv() and imported data to landingData.
+
+**2. Data Exploration**
+
+#####Calculating Sample Size
+```{r}
+n = dim(landingData)[1]
+variables = names(landingData)
+```
+
+Sample size can be obtained using the above parameters. We can see that no. of observation in our sample is `r n` and names of the variables are `r variables`.
+
+#####Visualizing Data
+
+From the data, we can observe that there is a linear relationship between variables 'speed_ground' and 'speed_air' with variable 'distance'.
+```{r echo=FALSE}
+pairs(landingData,pch=20)
+```
+
+We can further analyze the numeric variables of landing data by plotting their histograms.
+```{r, echo=FALSE, fig.width=12, fig.height=6}
+landingData <- read.csv("C:/Garima/2nd Flex/DAM/MidTerm/landing.csv", header=TRUE)
+par(mfrow=c(2,4))
+hist(landingData$duration, 
+     main="Histogram for Flight Duration", 
+     xlab="Flight Duration", 
+     border="blue", 
+     col="green")
+hist(landingData$no_pasg, 
+     main="Histogram for No. of Passengers", 
+     xlab="Passengers", 
+     border="blue", 
+     col="green")
+hist(landingData$speed_ground, 
+     main="Histogram for Speed Ground", 
+     xlab="Speed Ground", 
+     border="blue", 
+     col="green")
+hist(landingData$speed_air, 
+     main="Histogram for Speed Air", 
+     xlab="Speed Air", 
+     border="blue", 
+     col="green")
+hist(landingData$height, 
+     main="Histogram for Height", 
+     xlab="Height", 
+     border="blue", 
+     col="green")
+hist(landingData$pitch, 
+     main="Histogram for Pitch", 
+     xlab="Pitch", 
+     border="blue", 
+     col="green")
+hist(landingData$distance, 
+     main="Histogram for Distance", 
+     xlab="Distance", 
+     border="blue", 
+     col="green")
+```
+
+We can observe the data further using the summary function. It can be seen that there are two types of aircrafts i.e. Airbus and Boeing. 
+
+Speed_Air has 600 NA's.
+
+```{r echo=FALSE}
+summary(landingData)
+```
+
+#####Cleaning the data
+
+According to question, I will consider the values for normal flights.
+
+For duration, normal flight should always be greater than 40min.
+
+```{r}
+landingData1 = landingData[ (landingData$duration > 40), ]
+```
+
+For normal landing, 140mph >= speed_ground >= 30mph and 140mph >= speed_air >= 30mph.
+
+```{r}
+landingData2 = landingData1[(landingData1$speed_ground >= 30), ]
+landingData3 = landingData2[(landingData2$speed_ground <= 140), ]
+landingData4 = landingData3 [!is.null(landingData3$speed_air >= 30),]
+landingData5 = landingData4 [!is.null(landingData4$speed_air <= 140),]
+```
+
+Height of the aircraft must be at least 6 meters high.
+
+```{r}
+landingData6 = landingData5[(landingData5$height >= 6), ]
+```
+
+Length of an airport runway is less than 6000 feet.
+
+```{r}
+myLandingData = landingData6[(landingData6$distance < 6000), ]
+```
+
+Cleaned data is myLandingData and no. of observations are `r dim(myLandingData)[1]`.
+
+**3. Visualizing Data**
+
+We can again visualize data using pairs() function and observe that there is still exist a linear relationship between variables 'speed_ground' and 'speed_air' with variable 'distance'.
+
+```{r echo=FALSE}
+pairs(myLandingData)
+```
+
+It can be seen that using the variables aircraft, speed_ground, speed_air and height, we can derive distance.
+
+```{r echo=FALSE}
+attach(myLandingData)
+model <- lm(distance ~ aircraft + duration + no_pasg + speed_ground + speed_air  + height + pitch)
+summary(model)
+```
+
+**4. Selecting the variables**
+
+1. For variable Aircraft,
+
+```{r fig.width=3, fig.height=3} 
+aircraftType = rep(1,length(aircraft)) * (aircraft == "boeing")
+plot(aircraftType, distance)
+```
+
+After plotting the aircraft type vs distance, we can observe that mean distance of aircraft boeing is higher than the mean distance of aircraft airbus.
+
+2. For variable Height,
+
+We will keep height variable as we can observe from least square fitted model that height has high importance.
+
+3. For variable Speed_ground,
+
+This variable also has utmost importance as it varies linearily with the variable distance.
+
+4. For variable Speed_Air,
+
+Since this variable has 600 NAs, so we can analyze our data to find if there is some other variable which can act as its substitute.
+
+Degree of co-relation between 'speed_air' and other variables can be observed by:
+
+```{r fig.width=3, fig.height=3} 
+cor(myLandingData[,2:7],use="pairwise.complete.obs")
+```
+
+We can see from correlation coefficient of 0.99 between speed_air and speed_ground that they both vary linearily.
+
+We can plot these variables for better understanding:
+
+```{r fig.width=3, fig.height=3} 
+plot(speed_ground, speed_air)
+```
+
+It can be observed that speed_air varies linearily with speed_ground for speed_ground > 90.
+
+**5. Model Checking**
+
+#####New Linear Regression Model for the above variables:
+
+```{r echo=FALSE}
+newModel <- lm(distance ~ aircraftType + height + speed_ground)
+summary(newModel)
+```
+
+Plotting the regression for each independent variable:
+
+```{r echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1,3))
+plot(distance~aircraftType)
+plot(distance~height)
+plot(distance~speed_ground)
+```
+
+We can observe from the plots that speed_ground is not completely linear with distance.
+
+To verify it further, we can generate residual plots:
+
+```{r echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1,4))
+residual = newModel$res 
+plot(residual~aircraftType)
+plot(residual~height)
+plot(residual~speed_ground)
+plot(residual~newModel$fitted.values)
+```
+
+It can be observed from residual plots that speed_ground doesn't hold a linear relationship with distance. When the value of speed_ground increases above 80, there exist a linear relationship however, for the complete values between 40mph to 80mph, there exist a quadritic relationship.
+
+**Re-Modeling**
+
+We can further perform the re-modeling by adding a higher degree variable in the model mentioned above. 
+
+```{r echo=FALSE, fig.width=7, fig.height=3}
+speedGroundSq = I(speed_ground^2)
+modelLatest <- lm(distance ~ aircraftType + height + speed_ground + speedGroundSq)
+summary(modelLatest)
+```
+
+Residual Plots:
+
+```{r echo=FALSE, fig.width=7, fig.height=3}
+par(mfrow=c(1,5))
+speedgroundsquare = speed_ground^2
+residualLatest = modelLatest$res
+plot(residualLatest~aircraftType)
+plot(residualLatest~height)
+plot(residualLatest~speed_ground)
+plot(residualLatest~speedgroundsquare)
+plot(residualLatest~modelLatest$fitted.values)
+```
+
+**7. Model Adequacy**
+
+#####7.1 Plotting Residuals of other parameters
+```{r , fig.width=7, fig.height=3}
+par(mfrow=c(1,4))
+plot(residualLatest~pitch)
+plot(residualLatest~no_pasg)
+plot(residualLatest~duration)
+```
+
+As we can observe that, non-model parameters do not exhibit any specific pattern hence it demonstrates that the model is a good fit.
+
+#####7.2 Calculating coefficient of Determination
+
+```{r echo=FALSE}
+rSq = summary(modelLatest)$r.square
+```
+
+A high value of R^2 of `r rSq` demonstrates that the model is a good fit.
+
+#####7.3 Performing T Test
+While performing T Test, we can reject the null hypothesis as the t values of all regressors are less than the value of tcritical.
+
+Also since the calculated p-values are less than $\alpha = 0.05$ so it again proves that we can reject the null hypothesis.
+
+Hence we can conclude that 'distance' demonstrates a relationship with all the variables.
+
+#####7.4 Performing F Test
+
+Calcuating SST, SSRES, SSR and F
+```{r} 
+meanDis = mean(distance)
+SST=sum((distance-meanDis)^2)
+SSRes=sum((distance-modelLatest$fitted.values)^2)
+SSR=sum((modelLatest$fitted.values-meanDis)^2)
+fVal=SSR/2/(SSRes/(n-2-1))
+```
+
+SST(Total) = `r SST`
+SSRes(Residual) = `r SSRes`
+SSR(Regression) = `r SSR`
+
+Observing that value of FStatistic = `r fVal` > FCritical, null hypothesis H0 can be rejected which shows that 'distance' has a relationship with all the variables.
+
+#####7.5 Calculating Multicolinearity
+
+Calculating multicolinearity without speed_ground^2:
+
+```{r}
+modelN <- lm(distance ~ aircraftType + height + speed_ground)
+library(car)
+vif(model4)
+```
+
+Since, the value of VIF is near 1 it means that there is no multicolinearity between the regressors.
+
+**8. Conclusion**
+
+####We can conclude from the above observations that this model is the best fit model due to the following reasons:
+
+1. All the variables plays a significant role in this model.
+
+2. Resiual plots do not follow a particular pattern and is distributed randomly.
+
+3. P value of 2.2e-16 is very small and less than 0.05.
+
+4. R^2 of 0.977 is very near to 1 hence the model can determine 97.7% of the variability in distance.
+
+5. Landing distance is dependent on the make of aircraft, ground speed and height over threshold.
+
