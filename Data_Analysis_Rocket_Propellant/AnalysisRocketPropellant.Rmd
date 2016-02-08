@@ -1,0 +1,264 @@
+---
+title: "Assignment 2"
+author: "Garima Sharma"
+date: "November 9, 2015"
+output: html_document
+---
+
+Assignment 2
+
+####### Question 1 ###################### 
+
+To read rocket propellent data, I have used read.delim().
+
+```{r}
+rm(list=ls())
+rocketdata <- read.delim("Data-ex-2-1 (Rocket Prop).txt",h=T)
+rocketdata
+```
+
+
+####### Question 2 ###################### 
+
+I have plotted the rocket propellant data as follows:
+
+```{r}
+names(rocketdata)
+print(rocketdata)
+n=dim(rocketdata)[1]
+```
+
+```{r, echo=FALSE}
+plot(rocketdata$x,rocketdata$y,pch=20, main="Rocket Propellant Data", col.main="red", font.main=4, xlab="Shear Strength", ylab="Age of Propellant", col.lab=rgb(0,0.5,0))
+```
+
+####### Question 3 ###################### 
+
+I have performed linear regression without using lm in the following manner:
+
+3.1 
+
+```{r}
+meanx = mean(rocketdata$x)
+meany = mean(rocketdata$y)
+Sxx=sum((rocketdata$x-meanx)^2)
+Sxy=sum((rocketdata$x-meanx)*rocketdata$y)
+```
+
+Value of Sxx is `r Sxx` and value of Sxy is `r Sxy` .
+
+3.2 
+
+```{r}
+beta1 = Sxy / Sxx
+beta1
+beta0 = meany - beta1*meanx
+beta0
+```
+
+Value of $\beta0$ is `r beta0` and value of $\beta1$ is `r 
+
+3.3 
+
+```{r}
+SST = sum((rocketdata$y - meany)^2)
+SST
+yrocketdata = beta1 * rocketdata$x + beta0
+yrocketdata
+SSR = sum((yrocketdata - meany)^2)
+SSR
+SSRES = sum((rocketdata$y - yrocketdata)^2)
+SSRES
+```
+
+Value of SST is `r SST`, value of SSR is `r SSR` and value of SSRES is `r SSRES`.
+
+3.4 
+
+```{r}
+rocketdataRsquare = SSR / SST
+```
+
+Value of R^2 is `r rocketdataRsquare`.
+
+####### Question 4 ###################### 
+
+I have used the following method to calculate linear regression using lm().
+
+4.1 
+
+```{r}
+modelrocketdata = lm(y ~ x, data=rocketdata)
+
+sxxnew=sum((rocketdata$x-meanx)^2)
+sxynew=sum((rocketdata$x-meanx)*rocketdata$y)
+```
+
+Value of Sxx is `r sxxnew` and value of Sxy is `r sxynew` .
+
+4.2 
+
+```{r}
+beta0new = modelrocketdata$coefficients[1]
+beta1new = modelrocketdata$coefficients[2]
+```
+
+Value of $\beta0$ is `r beta0new` and value of $\beta1$ is `r beta1new`.
+
+4.3 
+
+```{r}
+sstnew = sum((rocketdata$y - meany)^2)
+ssrnew = sum((modelrocketdata$fitted.values - meany)^2)
+ssresnew = sum((rocketdata$y - modelrocketdata$fitted.values)^2)
+```
+
+Value of SST is `r sstnew`, value of SSR is `r ssrnew` and value of SSRES is `r ssresnew`.
+
+4.4 
+
+```{r}
+rocketdataRsquarenew = summary(modelrocketdata)$r.square
+```
+
+Value of R^2 is `r rocketdataRsquarenew`.
+
+####### Question 5 ###################### 
+
+Hypothesis Testing and Interval Estimation
+
+5.1 t Test
+
+t-statistic is calculated as $t0 = \beta1 / SE(\beta1)$
+
+t-statistic can be calculated using summary of data read from the text file above
+and calculating linear regression.
+
+```{r}
+modelrocketdata = lm(y ~ x, data=rocketdata)
+summary(modelrocketdata)$coef
+tvalue = summary(modelrocketdata)$coef[,1]/summary(modelrocketdata)$coef[,2]
+tcritical = qt(1-(0.05/2), 18)
+```
+
+t-statistic calculated is `r tvalue`.
+
+Assuming alpha as `r 0.05`, t critical can be calculated as `r tcritical`.
+
+I can observe that value if t-statistic is less than the value of t-critical, hence null hypothesis is rejected. 
+
+I can conclude that there exists a linear relationship between y and x.
+
+Using p-value as calculated below which is also obtainable from summary data,
+
+```{r}
+pval = 2*(1-pt(abs(summary(modelrocketdata)$coef[,1]/summary(modelrocketdata)$coef[,2]),18))
+```
+
+Since, pvalue of `r pval` is less than the value of 0.05, we can reject the null hypothesis.
+
+5.2 ANOVA Test
+
+```{r}
+MSRES=SSRES/(n-2)
+fvalue = round((SSR/1)/(SSRES/(n-2)),2)
+```
+
+```{r}
+n=20
+alpha = 0.05
+anova(modelrocketdata)
+F0 = round((SSR/1)/(SSRES/(n-2)),2)
+crticalf = qf(1-alpha,1,n-2)
+```
+
+Value of F0 is `r fvalue` which can also be calculated from anova method.
+value of fcritical is `r crticalf`.
+
+Comparing the value of F statistic which is greater than the F critical, we can conclude that null hypothesis can be rejected. Hence there is a linear relationship between y and x.
+
+F test p-value is `1-pf(fvalue, 1, 18)`.
+
+p-value is `r 1-pf(fvalue, 1, 18)`
+
+Since p-value is less than the value of alpha `r alpha`, we can reject the null hypothesis. 
+
+5.3 Calculating Confidence Interval
+
+5.3.1 I am calculating confidence interval for coefficients by using the following formulas for slope as well as intercept:
+
+```{r}
+alpha = 0.05
+n=20
+modelrocketdata = lm(y ~ x, data=rocketdata)
+beta0hat = modelrocketdata$coefficients[1]
+beta1hat = modelrocketdata$coefficients[2]
+tcritical = qt(1-alpha/2, n-2)
+sebeta0hat = summary(modelrocketdata)$coef[1,2]
+sebeta1hat = summary(modelrocketdata)$coef[2,2]
+```
+
+Confidence Interval at `r 100*(1-alpha)`% level of significance
+
+For $\beta0$, 
+`r round((beta0hat - tcritical*sebeta0hat),3)` <= $\beta0$ <= `r round((beta0hat + tcritical*sebeta0hat),3)`
+
+For $\beta1$,
+`r round((beta1hat - tcritical*sebeta1hat),3)` <= $\beta1$ <= `r round((beta1hat + tcritical*sebeta1hat),3)`
+
+5.3.2 Calculating for fitted values, 
+
+I calculated the fitted values and confidence interval of y by using the given value of x as mentioned below:
+
+```{r echo = FALSE}
+
+confidence1= predict(modelrocketdata,interval = c("confidence"),level =0.95, type="response")
+msres=SSRES/(n-2)
+merr = tcritical * sqrt ((MSRES)*(((1/n) + ((rocketdata [,2]-mean(rocketdata [,2]))^2)/Sxx)))
+
+fittedy = beta0hat + beta1hat * rocketdata[,2]
+ylower = fittedy - merr
+yupper = fittedy + merr
+W = yupper - ylower
+
+#confintervaldata = data.frame(fittedy, ylower, yupper,W)
+#cdata = cbind(rocketdata, confintervaldata)
+
+#cdata
+
+```
+
+5.3.3 We can calculate predicted value as:
+
+```{r echo = FALSE}
+
+xpredictedval = seq(0,40)
+confidenceval= predict(modelrocketdata,newdata=data.frame(x=xpredictedval),interval = c("confidence"),level =0.95, type="response")
+confidenceval
+
+#marginerr = tcritical * sqrt ((MSRES)*  ((1)+ (1/n) + (((xpredictedval-mean(xpredictedval))^2)/sxx)))
+#ypredictedval = beta0hat + beta1hat * xpredictedval
+#ylower = ypredictedval - marginerr
+#yupper = ypredictedval + marginerr
+#Width = yupper - ylower
+#cipred = data.frame(xpredictedval, ypredictedval, ylower, yupper,Width)
+#cipred
+
+```
+
+5.4 Plot data points, the regression line, the confidence interval for fitted values and the confidence interval for predict values 
+
+```{r echo=FALSE}
+plot(rocketdata$x,rocketdata$y,pch=20)
+abline(modelrocketdata, col="red")
+lines(rocketdata$x, ylower,col="green",lty=2)
+lines(rocketdata$x, yupper,col="green",lty=2)
+
+
+plot(rocketdata$x,rocketdata$y,pch=20)
+modelfinal = lm(y~x, data = rocketdata)
+abline(modelrocketdata, col="red")
+lines(xpredictedval,confidenceval[,2],col="blue",lty=2)
+lines(xpredictedval,confidenceval[,3],col="blue",lty=2)
+
+```
